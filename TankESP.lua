@@ -171,11 +171,9 @@ local function AddESP()
 
     -- Подключаемся к PlayerAdded и PlayerRemoving, чтобы добавлять и удалять ESP для игроков
     Connections.PlayerAddedConnection = Players.PlayerAdded:Connect(function(player)
-        if player.Team ~= LocalPlayer.Team and not player.Neutral then
-            task.defer(function()
-                AddESPForPlayer(player)
-            end)
-        end
+        task.defer(function()
+            AddESPForPlayer(player)
+        end)
     end)
 
     Connections.PlayerRemovingConnection = Players.PlayerRemoving:Connect(function(player)
