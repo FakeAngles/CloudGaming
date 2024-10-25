@@ -213,12 +213,12 @@ local function RemoveESP()
         data.Label:Remove()
     end
     ESPLabels = {}
+    getgenv().TankESP = nil  -- Удаляем глобальную переменную, чтобы предотвратить повторное использование
 end
 
 --// Main
 
 AddESP()
-SendNotification("Tank ESP", "Скрипт успешно активирован! Нажмите 'ESP OFF' для отключения.", 5)
+SendNotification("Tank ESP", "Скрипт успешно активирован!", 5)
 
--- Function to expose RemoveESP for external calls
-environment.RemoveESP = RemoveESP
+getgenv().TankESP.RemoveESP = RemoveESP  -- Добавляем функцию удаления в глобальную переменную
