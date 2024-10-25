@@ -7,9 +7,9 @@ local Environment = getgenv().TankESP
 
 local StarterGui = game:GetService("StarterGui")
 local RunService = game:GetService("RunService")
-local Camera = game:GetService("Workspace").CurrentCamera
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local Camera = game:GetService("Workspace").CurrentCamera
 local SpawnedVehicles = game:GetService("Workspace"):WaitForChild("SpawnedVehicles")
 
 --// Cached Functions
@@ -87,11 +87,28 @@ local function AddESP()
             if entity and entity.Parent then
                 if data.Type == "Vehicle" and entity:IsA("Model") and entity:FindFirstChildWhichIsA("BasePart") then
                     local primaryPart = entity.PrimaryPart or entity:FindFirstChildWhichIsA("BasePart")
-                    local Vector, OnScreen = Camera:WorldToViewportPoint(primaryPart.Position)
-                    if OnScreen then
-                        ESPLabel.Visible = true
-                        ESPLabel.Position = Vector2new(Vector.X, Vector.Y + 20)  -- Смещаем позицию ниже, чтобы не накладываться на игрока
-                        ESPLabel.Text = string.format("%s (%.2f м)", entity.Name, (primaryPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude * 0.28)  -- Показываем название техники и расстояние до ближайшего врага
+                    local distanceToNearestEnemy = math.huge
+                    local nearestEnemy = nil
+
+                    for _, player in pairs(Players:GetPlayers()) do
+                        if player.Team ~= LocalPlayer.Team and not player.Neutral and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                            local distance = (primaryPart.Position - player.Character.HumanoidRootPart.Position).Magnitude * 0.28
+                            if distance < distanceToNearestEnemy then
+                                distanceToNearestEnemy = distance
+                                nearestEnemy = player
+                            end
+                        end
+                    end
+
+                    if nearestEnemy and distanceToNearestEnemy <= 5 then
+                        local Vector, OnScreen = Camera:WorldToViewportPoint(primaryPart.Position)
+                        if OnScreen then
+                            ESPLabel.Visible = true
+                            ESPLabel.Position = Vector2new(Vector.X, Vector.Y + 20)  -- Смещаем позицию ниже, чтобы не накладываться на игрока
+                            ESPLabel.Text = string.format("%s (%.2f м)", entity.Name, (primaryPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude * 0.28)  -- Показываем название техники и расстояние до ближайшего врага
+                        else
+                            ESPLabel.Visible = false
+                        end
                     else
                         ESPLabel.Visible = false
                     end
@@ -101,9 +118,27 @@ local function AddESP()
                     if OnScreen then
                         ESPLabel.Visible = true
                         ESPLabel.Position = Vector2new(Vector.X, Vector.Y)
-                        local distanceToLocalPlayer = (humanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude * 0.28
-                        local health = entity.Character.Humanoid.Health
-                        ESPLabel.Text = string.format("%s (%.2f м) | HP: %.0f", entity.Name, distanceToLocalPlayer, health)
+                        local isNearVehicle = false
+
+                        for _, vehicle in pairs(SpawnedVehicles:GetChildren()) do
+                            if vehicle:IsA("Model") and vehicle:FindFirstChildWhichIsA("BasePart") then
+                                local primaryPart = vehicle.PrimaryPart or vehicle:FindFirstChildWhichIsA("BasePart")
+                                local distance = (primaryPart.Position - humanoidRootPart.Position).Magnitude * 0.28
+                                if distance <= 5 then
+                                    isNearVehicle = true
+                                    break
+                                end
+                            end
+                        end
+
+                        if not isNearVehicle then
+                            local distanceToLocalPlayer = (humanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude * 0.28
+                            local health = entity.Character.Humanoid.Health
+                            ESPLabel.Text = string.format("%s (%.2f м) | HP: %.0f", entity.Name, distanceToLocalPlayer, health)
+                        else
+                            local health = entity.Character.Humanoid.Health
+                            ESPLabel.Text = string.format("%s | HP: %.0f", entity.Name, health)
+                        end
                     else
                         ESPLabel.Visible = false
                     end
@@ -181,5 +216,5 @@ end
 
 --// Main
 
-AddESP()
-SendNotification("Tank ESP", "Скрипт успешно активирован!", 5)
+Environment.AddESP = AddESP
+Environment.RemoveESP = RemoveESP
