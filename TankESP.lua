@@ -22,7 +22,6 @@ local Vector2new = Vector2.new
 
 local ESPLabels = {}  -- Таблица для хранения ESP элементов для каждой техники и игроков
 local Connections = {}  -- Таблица для хранения соединений
-local UnloadButton = nil  -- Кнопка для выгрузки скрипта
 
 --// Functions
 
@@ -214,40 +213,9 @@ local function RemoveESP()
         data.Label:Remove()
     end
     ESPLabels = {}
-    if UnloadButton then
-        UnloadButton:Destroy()
-        UnloadButton = nil
-    end
 end
-
-local function AddUnloadButton()
-    -- Создаем ScreenGui, если его нет
-    local playerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
-    local screenGui = playerGui:FindFirstChild("TankESPGui")
-    if not screenGui then
-        screenGui = Instance.new("ScreenGui")
-        screenGui.Name = "TankESPGui"
-        screenGui.Parent = playerGui
-    end
-
-    -- Добавляем кнопку для выгрузки скрипта
-    UnloadButton = Instance.new("TextButton")
-    UnloadButton.Size = UDim2.new(0, 200, 0, 50)
-    UnloadButton.Position = UDim2.new(0, 10, 0, 10)
-    UnloadButton.Text = "Выгрузить Tank ESP"
-    UnloadButton.Parent = screenGui
-    UnloadButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    UnloadButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    UnloadButton.MouseButton1Click:Connect(function()
-        RemoveESP()
-        SendNotification("Tank ESP", "Скрипт успешно выгружен!", 3)
-        getgenv().TankESP = nil
-    end)
-
-    end
 
 --// Main
 
 AddESP()
-AddUnloadButton()
 SendNotification("Tank ESP", "Скрипт успешно активирован!", 5)
