@@ -1,1 +1,340 @@
-"--// Environment Setup\r\n\r\ngetgenv().TankESP = {}  -- Глобальная переменная для предотвращения дублирования\r\nlocal Environment = getgenv().TankESP\r\n\r\n--// Services\r\n\r\nlocal StarterGui = game:GetService(\"StarterGui\")\r\nlocal RunService = game:GetService(\"RunService\")\r\nlocal UserInputService = game:GetService(\"UserInputService\")\r\nlocal Camera = game:GetService(\"Workspace\").CurrentCamera\r\nlocal Players = game:GetService(\"Players\")\r\nlocal LocalPlayer = Players.LocalPlayer\r\nlocal SpawnedVehicles = game:GetService(\"Workspace\"):WaitForChild(\"SpawnedVehicles\")\r\n\r\n--// Cached Functions\r\n\r\nlocal Drawingnew = Drawing.new\r\nlocal Vector2new = Vector2.new\r\n\r\n--// Variables\r\n\r\nlocal ESPLabels = {}  -- Таблица для хранения ESP элементов для каждой техники и игроков\r\nlocal Connections = {}  -- Таблица для хранения соединений\r\nlocal UnloadButton = nil  -- Кнопка для выгрузки скрипта\r\n\r\n--// Functions\r\n\r\nlocal function SendNotification(Title, Text, Duration)\r\n    pcall(function()\r\n        StarterGui:SetCore(\"SendNotification\", {\r\n            Title = Title,\r\n            Text = Text,\r\n            Duration = Duration or 3\r\n        })\r\n    end)\r\nend\r\n\r\nlocal function AddESPForVehicle(vehicle)\r\n    if ESPLabels[vehicle] then return end  -- Не добавляем повторно ESP для одной и той же техники\r\n\r\n    local ESPLabel = Drawingnew(\"Text\")\r\n    ESPLabel.Visible = false\r\n    ESPLabel.Size = 18\r\n    ESPLabel.Color = Color3.fromRGB(255, 0, 0)  -- Красный цвет для выделения\r\n    ESPLabel.Center = true\r\n    ESPLabel.Outline = true\r\n    ESPLabel.Text = vehicle.Name  -- Уникальное название для каждого танка\r\n    ESPLabel.Position = Vector2new(0, 0)\r\n    ESPLabels[vehicle] = { Label = ESPLabel, Type = \"Vehicle\" }\r\nend\r\n\r\nlocal function AddESPForPlayer(player)\r\n    if ESPLabels[player] or player == LocalPlayer or player.Team == LocalPlayer.Team or player.Neutral then return end  -- Не добавляем повторно ESP и только для врагов\r\n\r\n    local ESPLabel = Drawingnew(\"Text\")\r\n    ESPLabel.Visible = false\r\n    ESPLabel.Size = 18\r\n    ESPLabel.Color = Color3.fromRGB(0, 255, 0)  -- Зеленый цвет для выделения врагов\r\n    ESPLabel.Center = true\r\n    ESPLabel.Outline = true\r\n    ESPLabels[player] = { Label = ESPLabel, Type = \"Player\" }\r\nend\r\n\r\nlocal function UpdateESP()\r\n    -- Проверяем каждую технику в SpawnedVehicles и добавляем ESP, если он еще не добавлен\r\n    for _, vehicle in pairs(SpawnedVehicles:GetChildren()) do\r\n        if vehicle:IsA(\"Model\") and vehicle:FindFirstChildWhichIsA(\"BasePart\") and not ESPLabels[vehicle] then\r\n            AddESPForVehicle(vehicle)\r\n        end\r\n    end\r\n\r\n    -- Проверяем каждого игрока и добавляем ESP, если он враг\r\n    for _, player in pairs(Players:GetPlayers()) do\r\n        if player ~= LocalPlayer and player.Team ~= LocalPlayer.Team and not player.Neutral and not ESPLabels[player] then\r\n            AddESPForPlayer(player)\r\n        end\r\n    end\r\nend\r\n\r\nlocal function AddESP()\r\n    -- Создаем ESP для каждой техники в SpawnedVehicles и для вражеских игроков\r\n    UpdateESP()\r\n\r\n    -- Подключаемся к RenderStepped, чтобы обновлять позиции текста\r\n    Connections.RenderConnection = RunService.RenderStepped:Connect(function()\r\n        for entity, data in pairs(ESPLabels) do\r\n            local ESPLabel = data.Label\r\n            if entity and entity.Parent then\r\n                if data.Type == \"Vehicle\" and entity:IsA(\"Model\") and entity:FindFirstChildWhichIsA(\"BasePart\") then\r\n                    local primaryPart = entity.PrimaryPart or entity:FindFirstChildWhichIsA(\"BasePart\")\r\n                    local distanceToNearestEnemy = math.huge\r\n                    local nearestEnemy = nil\r\n\r\n                    for _, player in pairs(Players:GetPlayers()) do\r\n                        if player.Team ~= LocalPlayer.Team and not player.Neutral and player.Character and player.Character:FindFirstChild(\"HumanoidRootPart\") then\r\n                            local distance = (primaryPart.Position - player.Character.HumanoidRootPart.Position).Magnitude * 0.28\r\n                            if distance \u003C distanceToNearestEnemy then\r\n                                distanceToNearestEnemy = distance\r\n                                nearestEnemy = player\r\n                            end\r\n                        end\r\n                    end\r\n\r\n                    if nearestEnemy and distanceToNearestEnemy \u003C= 5 then\r\n                        local Vector, OnScreen = Camera:WorldToViewportPoint(primaryPart.Position)\r\n                        if OnScreen then\r\n                            ESPLabel.Visible = true\r\n                            ESPLabel.Position = Vector2new(Vector.X, Vector.Y + 20)  -- Смещаем позицию ниже, чтобы не накладываться на игрока\r\n                            ESPLabel.Text = string.format(\"%s (%.2f м)\", entity.Name, (primaryPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude * 0.28)  -- Показываем название техники и расстояние до ближайшего врага\r\n                        else\r\n                            ESPLabel.Visible = false\r\n                        end\r\n                    else\r\n                        ESPLabel.Visible = false\r\n                    end\r\n                elseif data.Type == \"Player\" and entity:IsA(\"Player\") and entity.Character and entity.Character:FindFirstChild(\"HumanoidRootPart\") and entity.Character:FindFirstChild(\"Humanoid\") and entity.Character.Humanoid.Health > 0 then\r\n                    local humanoidRootPart = entity.Character.HumanoidRootPart\r\n                    local Vector, OnScreen = Camera:WorldToViewportPoint(humanoidRootPart.Position)\r\n                    if OnScreen then\r\n                        ESPLabel.Visible = true\r\n                        ESPLabel.Position = Vector2new(Vector.X, Vector.Y)\r\n                        local isNearVehicle = false\r\n\r\n                        for _, vehicle in pairs(SpawnedVehicles:GetChildren()) do\r\n                            if vehicle:IsA(\"Model\") and vehicle:FindFirstChildWhichIsA(\"BasePart\") then\r\n                                local primaryPart = vehicle.PrimaryPart or vehicle:FindFirstChildWhichIsA(\"BasePart\")\r\n                                local distance = (primaryPart.Position - humanoidRootPart.Position).Magnitude * 0.28\r\n                                if distance \u003C= 5 then\r\n                                    isNearVehicle = true\r\n                                    break\r\n                                end\r\n                            end\r\n                        end\r\n\r\n                        if not isNearVehicle then\r\n                            local distanceToLocalPlayer = (humanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude * 0.28\r\n                            local health = entity.Character.Humanoid.Health\r\n                            ESPLabel.Text = string.format(\"%s (%.2f м) | HP: %.0f\", entity.Name, distanceToLocalPlayer, health)\r\n                        else\r\n                            local health = entity.Character.Humanoid.Health\r\n                            ESPLabel.Text = string.format(\"%s | HP: %.0f\", entity.Name, health)\r\n                        end\r\n                    else\r\n                        ESPLabel.Visible = false\r\n                    end\r\n                else\r\n                    ESPLabel.Visible = false\r\n                end\r\n            else\r\n                ESPLabel:Remove()\r\n                ESPLabels[entity] = nil\r\n            end\r\n        end\r\n    end)\r\n\r\n    -- Подключаемся к ChildAdded и ChildRemoved, чтобы автоматически добавлять и удалять ESP для новой техники\r\n    Connections.ChildAddedConnection = SpawnedVehicles.ChildAdded:Connect(function(child)\r\n        if child:IsA(\"Model\") and child:FindFirstChildWhichIsA(\"BasePart\") then\r\n            task.defer(function()  -- Используем task.defer для корректного добавления нового объекта\r\n                AddESPForVehicle(child)\r\n            end)\r\n        end\r\n    end)\r\n\r\n    Connections.ChildRemovedConnection = SpawnedVehicles.ChildRemoved:Connect(function(child)\r\n        if ESPLabels[child] then\r\n            ESPLabels[child].Label:Remove()\r\n            ESPLabels[child] = nil\r\n        end\r\n    end)\r\n\r\n    -- Подключаемся к PlayerAdded и PlayerRemoving, чтобы добавлять и удалять ESP для игроков\r\n    Connections.PlayerAddedConnection = Players.PlayerAdded:Connect(function(player)\r\n        if player.Team ~= LocalPlayer.Team and not player.Neutral then\r\n            task.defer(function()\r\n                AddESPForPlayer(player)\r\n            end)\r\n        end\r\n    end)\r\n\r\n    Connections.PlayerRemovingConnection = Players.PlayerRemoving:Connect(function(player)\r\n        if ESPLabels[player] then\r\n            ESPLabels[player].Label:Remove()\r\n            ESPLabels[player] = nil\r\n        end\r\n    end)\r\nend\r\n\r\nlocal function RemoveESP()\r\n    -- Отключаем соединение и удаляем элементы ESP\r\n    if Connections.RenderConnection then\r\n        Connections.RenderConnection:Disconnect()\r\n        Connections.RenderConnection = nil\r\n    end\r\n    if Connections.ChildAddedConnection then\r\n        Connections.ChildAddedConnection:Disconnect()\r\n        Connections.ChildAddedConnection = nil\r\n    end\r\n    if Connections.ChildRemovedConnection then\r\n        Connections.ChildRemovedConnection:Disconnect()\r\n        Connections.ChildRemovedConnection = nil\r\n    end\r\n    if Connections.PlayerAddedConnection then\r\n        Connections.PlayerAddedConnection:Disconnect()\r\n        Connections.PlayerAddedConnection = nil\r\n    end\r\n    if Connections.PlayerRemovingConnection then\r\n        Connections.PlayerRemovingConnection:Disconnect()\r\n        Connections.PlayerRemovingConnection = nil\r\n    end\r\n    for _, data in pairs(ESPLabels) do\r\n        data.Label.Visible = false\r\n        data.Label:Remove()\r\n    end\r\n    ESPLabels = {}\r\n    if UnloadButton then\r\n        UnloadButton:Destroy()\r\n        UnloadButton = nil\r\n    end\r\nend\r\n\r\nlocal function AddUnloadButton()\r\n    -- Создаем ScreenGui, если его нет\r\n    local playerGui = game:GetService(\"Players\").LocalPlayer:WaitForChild(\"PlayerGui\")\r\n    local screenGui = playerGui:FindFirstChild(\"TankESPGui\")\r\n    if not screenGui then\r\n        screenGui = Instance.new(\"ScreenGui\")\r\n        screenGui.Name = \"TankESPGui\"\r\n        screenGui.Parent = playerGui\r\n    end\r\n\r\n    -- Добавляем кнопку для выгрузки скрипта\r\n    UnloadButton = Instance.new(\"TextButton\")\r\n    UnloadButton.Size = UDim2.new(0, 200, 0, 50)\r\n    UnloadButton.Position = UDim2.new(0, 10, 0, 10)\r\n    UnloadButton.Text = \"Выгрузить Tank ESP\"\r\n    UnloadButton.Parent = screenGui\r\n    UnloadButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)\r\n    UnloadButton.TextColor3 = Color3.fromRGB(255, 255, 255)\r\n    UnloadButton.MouseButton1Click:Connect(function()\r\n        RemoveESP()\r\n        SendNotification(\"Tank ESP\", \"Скрипт успешно выгружен!\", 3)\r\n        getgenv().TankESP = nil\r\n    end)\r\n\r\n    end\r\n\r\n--// Main\r\n\r\nAddESP()\r\nAddUnloadButton()\r\nSendNotification(\"Tank ESP\", \"Скрипт успешно активирован!\", 5)\r\n"
+--// Environment Setup
+
+local MenuGui = nil  -- Главное меню GUI
+local MenuOpen = false  -- Статус открытия меню
+local LoadingComplete = false  -- Статус завершения загрузки
+local ESPEnabled = false  -- Статус включения ESP
+
+--// Services
+
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local LocalPlayer = Players.LocalPlayer
+
+--// Functions
+
+local function SendNotification(Title, Text, Duration)
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = Title,
+            Text = Text,
+            Duration = Duration or 3
+        })
+    end)
+end
+
+local function MakeMenuDraggable(frame, dragHandle)
+    local dragging = false
+    local dragInput, mousePos, framePos
+
+    dragHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            mousePos = input.Position
+            framePos = frame.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    dragHandle.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - mousePos
+            frame.Position = UDim2.new(
+                framePos.X.Scale, framePos.X.Offset + delta.X,
+                framePos.Y.Scale, framePos.Y.Offset + delta.Y
+            )
+        end
+    end)
+end
+
+local function CreateLoadingScreen()
+    local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+    local LoadingGui = Instance.new("ScreenGui")
+    LoadingGui.Name = "LoadingScreen"
+    LoadingGui.Parent = playerGui
+
+    local LoadingFrame = Instance.new("Frame")
+    LoadingFrame.Size = UDim2.new(0, 300, 0, 250)
+    LoadingFrame.Position = UDim2.new(0.5, -150, 0.5, -125)
+    LoadingFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 60)
+    LoadingFrame.BorderSizePixel = 0
+    LoadingFrame.Parent = LoadingGui
+
+    local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.Size = UDim2.new(1, 0, 0, 50)
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Text = "MTC Sus Edition"
+    TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TitleLabel.TextScaled = true
+    TitleLabel.Font = Enum.Font.GothamBold
+    TitleLabel.Parent = LoadingFrame
+
+    local Logo = Instance.new("ImageLabel")
+    Logo.Size = UDim2.new(0, 100, 0, 100)
+    Logo.Position = UDim2.new(0.5, -50, 0, 50)
+    Logo.BackgroundTransparency = 1
+    Logo.Image = "rbxassetid://YOUR_IMAGE_ID"  -- Добавьте свой Asset ID для изображения логотипа
+    Logo.Parent = LoadingFrame
+
+    local LoadingLabel = Instance.new("TextLabel")
+    LoadingLabel.Size = UDim2.new(1, 0, 0, 50)
+    LoadingLabel.Position = UDim2.new(0, 0, 0, 160)
+    LoadingLabel.BackgroundTransparency = 1
+    LoadingLabel.Text = "UI Initialization [ Downloading ]"
+    LoadingLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    LoadingLabel.TextScaled = true
+    LoadingLabel.Font = Enum.Font.Gotham
+    LoadingLabel.Parent = LoadingFrame
+
+    local ProgressBar = Instance.new("Frame")
+    ProgressBar.Size = UDim2.new(0, 0, 0, 10)
+    ProgressBar.Position = UDim2.new(0.5, -100, 1, -20)
+    ProgressBar.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    ProgressBar.BorderSizePixel = 0
+    ProgressBar.Parent = LoadingFrame
+
+    local function UpdateProgressBar()
+        for i = 1, 100 do
+            ProgressBar.Size = UDim2.new(0, i * 2, 0, 10)
+            wait(0.02)
+        end
+        LoadingGui:Destroy()
+        LoadingComplete = true
+    end
+
+    spawn(UpdateProgressBar)
+end
+
+local function CreateTabMenu(title, tabs)
+    local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+    MenuGui = Instance.new("ScreenGui")
+    MenuGui.Name = "MTC_SusEditionMenu"
+    MenuGui.Parent = playerGui
+    MenuGui.Enabled = false
+
+    local MenuFrame = Instance.new("Frame")
+    MenuFrame.Size = UDim2.new(0, 600, 0, 400)
+    MenuFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
+    MenuFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 60)
+    MenuFrame.BorderSizePixel = 2
+    MenuFrame.BorderColor3 = Color3.fromRGB(255, 0, 255)
+    MenuFrame.Parent = MenuGui
+
+    local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.Size = UDim2.new(1, 0, 0, 50)
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Text = "MTC sus edition"
+    TitleLabel.TextColor3 = Color3.fromRGB(255, 0, 255)
+    TitleLabel.TextScaled = true
+    TitleLabel.Font = Enum.Font.GothamBold
+    TitleLabel.Parent = MenuFrame
+
+    local Watermark = Instance.new("ImageLabel")
+    Watermark.Size = UDim2.new(0, 50, 0, 50)
+    Watermark.Position = UDim2.new(0.5, -25, 0, -25)
+    Watermark.BackgroundTransparency = 1
+    Watermark.Image = "rbxassetid://YOUR_IMAGE_ID"  -- Добавьте свой Asset ID для изображения водяного знака
+    Watermark.Parent = MenuFrame
+
+    MakeMenuDraggable(MenuFrame, TitleLabel)
+
+    local TabButtons = Instance.new("Frame")
+    TabButtons.Size = UDim2.new(0, 600, 0, 40)
+    TabButtons.Position = UDim2.new(0, 0, 0, 50)
+    TabButtons.BackgroundColor3 = Color3.fromRGB(40, 40, 70)
+    TabButtons.BorderSizePixel = 0
+    TabButtons.Parent = MenuFrame
+
+    local ContentFrame = Instance.new("Frame")
+    ContentFrame.Size = UDim2.new(1, 0, 1, -90)
+    ContentFrame.Position = UDim2.new(0, 0, 0, 90)
+    ContentFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 70)
+    ContentFrame.BorderSizePixel = 0
+    ContentFrame.Parent = MenuFrame
+
+    local function SwitchTab(tabName)
+        for _, tab in pairs(ContentFrame:GetChildren()) do
+            tab.Visible = false
+        end
+        local selectedTab = ContentFrame:FindFirstChild(tabName)
+        if selectedTab then
+            selectedTab.Visible = true
+        end
+    end
+
+    for i, tab in ipairs(tabs) do
+        local TabButton = Instance.new("TextButton")
+        TabButton.Size = UDim2.new(0, 100, 0, 40)
+        TabButton.Position = UDim2.new(0, (i - 1) * 100, 0, 0)
+        TabButton.Text = tab.name
+        TabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        TabButton.BackgroundColor3 = Color3.fromRGB(50, 50, 90)
+        TabButton.BorderSizePixel = 2
+        TabButton.BorderColor3 = Color3.fromRGB(255, 0, 255)
+        TabButton.TextScaled = true
+        TabButton.Font = Enum.Font.Gotham
+        TabButton.Parent = TabButtons
+        TabButton.MouseButton1Click:Connect(function()
+            SwitchTab(tab.name)
+        end)
+
+        local TabContent = Instance.new("Frame")
+        TabContent.Name = tab.name
+        TabContent.Size = UDim2.new(1, 0, 1, 0)
+        TabContent.BackgroundTransparency = 1
+        TabContent.Visible = false
+        TabContent.Parent = ContentFrame
+
+        tab.callback(TabContent)
+    end
+
+    SwitchTab(tabs[1].name)
+
+    -- Add watermark that is always visible
+    local WatermarkLabel = Instance.new("TextLabel")
+    WatermarkLabel.Size = UDim2.new(0, 300, 0, 25)
+    WatermarkLabel.Position = UDim2.new(0, 10, 0, 10)
+    WatermarkLabel.BackgroundTransparency = 1
+    WatermarkLabel.Text = "Title Here | Private | Username | FPS: 60 | Ping: 54ms | Date: Mar, 12th, 2023"
+    WatermarkLabel.TextColor3 = Color3.fromRGB(255, 0, 255)
+    WatermarkLabel.TextScaled = true
+    WatermarkLabel.Font = Enum.Font.Gotham
+    WatermarkLabel.Parent = playerGui
+end
+
+--// Main
+
+CreateLoadingScreen()
+
+CreateTabMenu("MTC sus edition", {
+    {
+        name = "ESP",
+        callback = function(frame)
+            local Label = Instance.new("TextLabel")
+            Label.Size = UDim2.new(1, -20, 0, 30)
+            Label.Position = UDim2.new(0, 10, 0, 10)
+            Label.BackgroundTransparency = 1
+            Label.Text = "ESP Settings"
+            Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+            Label.TextScaled = true
+            Label.Font = Enum.Font.Gotham
+            Label.Parent = frame
+
+            local ToggleButton = Instance.new("TextButton")
+            ToggleButton.Size = UDim2.new(0, 100, 0, 40)
+            ToggleButton.Position = UDim2.new(0, 10, 0, 50)
+            ToggleButton.Text = "ESP ON"
+            ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+            ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 90)
+            ToggleButton.BorderSizePixel = 2
+            ToggleButton.BorderColor3 = Color3.fromRGB(255, 0, 255)
+            ToggleButton.TextScaled = true
+            ToggleButton.Font = Enum.Font.Gotham
+            ToggleButton.Parent = frame
+
+            ToggleButton.MouseButton1Click:Connect(function()
+                ESPEnabled = not ESPEnabled
+                ToggleButton.Text = ESPEnabled and "ESP OFF" or "ESP ON"
+                if ESPEnabled then
+                    -- Code to enable ESP
+                    SendNotification("ESP", "Tank ESP включен", 3)
+                    -- Execute TankESP script from GitHub
+                    local url = "https://raw.githubusercontent.com/FakeAngles/CloudGaming/refs/heads/main/TankESP.lua?token=GHSAT0AAAAAACZQRRGSAAD67XSFJ7GOFLTCZY3X5DQ"
+                    local response = game:HttpGet(url)
+                    loadstring(response)()
+                else
+                    -- Code to disable ESP
+                    SendNotification("ESP", "Tank ESP выключен", 3)
+                    if getgenv().TankESP then
+                        getgenv().TankESP = nil
+                    end
+                end
+            end)
+        end
+    },
+    {
+        name = "Teleport",
+        callback = function(frame)
+            local Label = Instance.new("TextLabel")
+            Label.Size = UDim2.new(1, -20, 0, 30)
+            Label.Position = UDim2.new(0, 10, 0, 10)
+            Label.BackgroundTransparency = 1
+            Label.Text = "Teleport Settings"
+            Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+            Label.TextScaled = true
+            Label.Font = Enum.Font.Gotham
+            Label.Parent = frame
+        end
+    },
+    {
+        name = "Fun",
+        callback = function(frame)
+            local Label = Instance.new("TextLabel")
+            Label.Size = UDim2.new(1, -20, 0, 30)
+            Label.Position = UDim2.new(0, 10, 0, 10)
+            Label.BackgroundTransparency = 1
+            Label.Text = "Fun Settings"
+            Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+            Label.TextScaled = true
+            Label.Font = Enum.Font.Gotham
+            Label.Parent = frame
+        end
+    },
+    {
+        name = "Settings",
+        callback = function(frame)
+            local Label = Instance.new("TextLabel")
+            Label.Size = UDim2.new(1, -20, 0, 30)
+            Label.Position = UDim2.new(0, 10, 0, 10)
+            Label.BackgroundTransparency = 1
+            Label.Text = "Settings"
+            Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+            Label.TextScaled = true
+            Label.Font = Enum.Font.Gotham
+            Label.Parent = frame
+
+            local UnloadButton = Instance.new("TextButton")
+            UnloadButton.Size = UDim2.new(0, 150, 0, 40)
+            UnloadButton.Position = UDim2.new(0, 10, 0, 50)
+            UnloadButton.Text = "Unload Script"
+            UnloadButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+            UnloadButton.BackgroundColor3 = Color3.fromRGB(50, 50, 90)
+            UnloadButton.BorderSizePixel = 2
+            UnloadButton.BorderColor3 = Color3.fromRGB(255, 0, 255)
+            UnloadButton.TextScaled = true
+            UnloadButton.Font = Enum.Font.Gotham
+            UnloadButton.Parent = frame
+
+            UnloadButton.MouseButton1Click:Connect(function()
+                if MenuGui then
+                    MenuGui:Destroy()
+                    MenuGui = nil
+                end
+                SendNotification("MTC Sus Edition", "Скрипт успешно выгружен!", 3)
+                getgenv().TankESP = nil  -- Удаляем все связанные функции и скрипты
+            end)
+        end
+    }
+})
+
+SendNotification("MTC Sus Edition", "Скрипт успешно активирован! Нажмите 'Right Shift' для меню.", 5)
+
+-- Toggle menu visibility with Right Shift
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if input.KeyCode == Enum.KeyCode.RightShift and not gameProcessed and LoadingComplete then
+        MenuOpen = not MenuOpen
+        MenuGui.Enabled = MenuOpen
+    end
+end)
