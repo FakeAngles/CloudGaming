@@ -1,6 +1,6 @@
 --// Environment Setup
 
-getgenv().TankESP = {}  -- Глобальная переменная для предотвращения дублирования
+getgenv().TankESP = {}  -- Global variable to prevent duplication
 local Environment = getgenv().TankESP
 
 --// Services
@@ -19,8 +19,8 @@ local Vector2new = Vector2.new
 
 --// Variables
 
-local ESPLabels = {}  -- Таблица для хранения ESP элементов для каждой техники и игроков
-local Connections = {}  -- Таблица для хранения соединений
+local ESPLabels = {}  -- Table to store ESP elements for each vehicle and player
+local Connections = {}  -- Table to store connections
 
 --// Functions
 
@@ -35,40 +35,40 @@ local function SendNotification(Title, Text, Duration)
 end
 
 local function AddESPForVehicle(vehicle)
-    if ESPLabels[vehicle] then return end  -- Не добавляем повторно ESP для одной и той же техники
+    if ESPLabels[vehicle] then return end  -- Avoid adding duplicate ESP for the same vehicle
 
     local ESPLabel = Drawingnew("Text")
     ESPLabel.Visible = false
     ESPLabel.Size = 18
-    ESPLabel.Color = Color3.fromRGB(255, 0, 0)  -- Красный цвет для выделения
+    ESPLabel.Color = Color3.fromRGB(255, 0, 0)  -- Red color for highlighting
     ESPLabel.Center = true
     ESPLabel.Outline = true
-    ESPLabel.Text = vehicle.Name  -- Уникальное название для каждого танка
+    ESPLabel.Text = vehicle.Name  -- Unique name for each tank
     ESPLabel.Position = Vector2new(0, 0)
     ESPLabels[vehicle] = { Label = ESPLabel, Type = "Vehicle" }
 end
 
 local function AddESPForPlayer(player)
-    if ESPLabels[player] or player == LocalPlayer or player.Team == LocalPlayer.Team or player.Neutral then return end  -- Не добавляем повторно ESP и только для врагов
+    if ESPLabels[player] or player == LocalPlayer or player.Team == LocalPlayer.Team or player.Neutral then return end  -- Avoid adding duplicate ESP and only for enemies
 
     local ESPLabel = Drawingnew("Text")
     ESPLabel.Visible = false
     ESPLabel.Size = 18
-    ESPLabel.Color = Color3.fromRGB(0, 255, 0)  -- Зеленый цвет для выделения врагов
+    ESPLabel.Color = Color3.fromRGB(0, 255, 0)  -- Green color for highlighting enemies
     ESPLabel.Center = true
     ESPLabel.Outline = true
     ESPLabels[player] = { Label = ESPLabel, Type = "Player" }
 end
 
 local function UpdateESP()
-    -- Проверяем каждую технику в SpawnedVehicles и добавляем ESP, если он еще не добавлен
+    -- Check each vehicle in SpawnedVehicles and add ESP if not already added
     for _, vehicle in pairs(SpawnedVehicles:GetChildren()) do
         if vehicle:IsA("Model") and vehicle:FindFirstChildWhichIsA("BasePart") and not ESPLabels[vehicle] then
             AddESPForVehicle(vehicle)
         end
     end
 
-    -- Проверяем каждого игрока и добавляем ESP, если он враг
+    -- Check each player and add ESP if they are an enemy
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Team ~= LocalPlayer.Team and not player.Neutral and not ESPLabels[player] then
             AddESPForPlayer(player)
@@ -77,10 +77,10 @@ local function UpdateESP()
 end
 
 local function AddESP()
-    -- Создаем ESP для каждой техники в SpawnedVehicles и для вражеских игроков
+    -- Create ESP for each vehicle in SpawnedVehicles and for enemy players
     UpdateESP()
 
-    -- Подключаемся к RenderStepped, чтобы обновлять позиции текста
+    -- Connect to RenderStepped to update text positions
     Connections.RenderConnection = RunService.RenderStepped:Connect(function()
         for entity, data in pairs(ESPLabels) do
             local ESPLabel = data.Label
@@ -104,8 +104,8 @@ local function AddESP()
                         local Vector, OnScreen = Camera:WorldToViewportPoint(primaryPart.Position)
                         if OnScreen then
                             ESPLabel.Visible = true
-                            ESPLabel.Position = Vector2new(Vector.X, Vector.Y + 20)  -- Смещаем позицию ниже, чтобы не накладываться на игрока
-                            ESPLabel.Text = string.format("%s (%.2f м)", entity.Name, (primaryPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude * 0.28)  -- Показываем название техники и расстояние до ближайшего врага
+                            ESPLabel.Position = Vector2new(Vector.X, Vector.Y + 20)  -- Offset position to avoid overlapping with player
+                            ESPLabel.Text = string.format("%s (%.2f m)", entity.Name, (primaryPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude * 0.28)  -- Show vehicle name and distance to nearest enemy
                         else
                             ESPLabel.Visible = false
                         end
@@ -134,7 +134,7 @@ local function AddESP()
                         if not isNearVehicle then
                             local distanceToLocalPlayer = (humanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude * 0.28
                             local health = entity.Character.Humanoid.Health
-                            ESPLabel.Text = string.format("%s (%.2f м) | HP: %.0f", entity.Name, distanceToLocalPlayer, health)
+                            ESPLabel.Text = string.format("%s (%.2f m) | HP: %.0f", entity.Name, distanceToLocalPlayer, health)
                         else
                             local health = entity.Character.Humanoid.Health
                             ESPLabel.Text = string.format("%s | HP: %.0f", entity.Name, health)
@@ -152,10 +152,10 @@ local function AddESP()
         end
     end)
 
-    -- Подключаемся к ChildAdded и ChildRemoved, чтобы автоматически добавлять и удалять ESP для новой техники
+    -- Connect to ChildAdded and ChildRemoved to automatically add and remove ESP for new vehicles
     Connections.ChildAddedConnection = SpawnedVehicles.ChildAdded:Connect(function(child)
         if child:IsA("Model") and child:FindFirstChildWhichIsA("BasePart") then
-            task.defer(function()  -- Используем task.defer для корректного добавления нового объекта
+            task.defer(function()  -- Use task.defer for correct addition of new objects
                 AddESPForVehicle(child)
             end)
         end
@@ -168,7 +168,7 @@ local function AddESP()
         end
     end)
 
-    -- Подключаемся к PlayerAdded и PlayerRemoving, чтобы добавлять и удалять ESP для игроков
+    -- Connect to PlayerAdded and PlayerRemoving to add and remove ESP for players
     Connections.PlayerAddedConnection = Players.PlayerAdded:Connect(function(player)
         if player.Team ~= LocalPlayer.Team and not player.Neutral then
             task.defer(function()
@@ -186,7 +186,7 @@ local function AddESP()
 end
 
 local function RemoveESP()
-    -- Отключаем соединение и удаляем элементы ESP
+    -- Disconnect connections and remove ESP elements
     if Connections.RenderConnection then
         Connections.RenderConnection:Disconnect()
         Connections.RenderConnection = nil
