@@ -215,6 +215,9 @@ local function RemoveESP()
     ESPLabels = {}
 end
 
+-- Add the RemoveESP function to global so MTC Sus Menu can call it
+getgenv().TankESP.RemoveESP = RemoveESP
+
 --// Main
 
 AddESP()
