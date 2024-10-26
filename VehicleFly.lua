@@ -90,40 +90,21 @@ local function stopFlying()
     flying = false
     RunService:UnbindFromRenderStep("VehicleFly")
 
-    -- Удаление Core и связанных объектов
+    -- Удаляем Core и его привязки
     if workspace:FindFirstChild("Core") then
         workspace.Core:Destroy()
     end
 
     -- Убедимся, что удалены BodyPosition и BodyGyro
-    if torso:FindFirstChild("EPIXPOS") then
-        torso.EPIXPOS:Destroy()
-    end
-    if torso:FindFirstChildOfClass("BodyGyro") then
-        torso:FindFirstChildOfClass("BodyGyro"):Destroy()
-    end
-
-    -- Сброс скорости игрока
-    if plr.Character and plr.Character:FindFirstChild("Humanoid") then
-        plr.Character.Humanoid.WalkSpeed = 16
-    end
-
-    -- Удаление Core из персонажа
-    if Core and Core.Parent then
-        Core:Destroy()
-    end
-
-    -- Переместить игрока на землю, если он завис в воздухе
-    if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-        local humanoidRootPart = plr.Character.HumanoidRootPart
-        local ray = Ray.new(humanoidRootPart.Position, Vector3.new(0, -100, 0))
-        local hit, position = workspace:FindPartOnRay(ray, plr.Character)
-        if hit then
-            humanoidRootPart.CFrame = CFrame.new(position + Vector3.new(0, 5, 0))
-        else
-            -- Разрешить игроку прыгнуть, чтобы избавиться от проблемы зависания
-            plr.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    for _, instance in ipairs(torso:GetChildren()) do
+        if instance:IsA("BodyPosition") or instance:IsA("BodyGyro") then
+            instance:Destroy()
         end
+    end
+
+    -- Добавляем дополнительный импульс вниз для плавного возвращения под гравитацию
+    if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+        plr.Character.HumanoidRootPart.Velocity = Vector3.new(0, -100, 0)
     end
 end
 
