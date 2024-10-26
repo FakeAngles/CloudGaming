@@ -112,6 +112,16 @@ local function stopFlying()
     if Core and Core.Parent then
         Core:Destroy()
     end
+
+    -- Переместить игрока на землю, если он завис в воздухе
+    if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+        local humanoidRootPart = plr.Character.HumanoidRootPart
+        local ray = Ray.new(humanoidRootPart.Position, Vector3.new(0, -100, 0))
+        local hit, position = workspace:FindPartOnRay(ray, plr.Character)
+        if hit then
+            humanoidRootPart.CFrame = CFrame.new(position + Vector3.new(0, 5, 0))
+        end
+    end
 end
 
 local function unloadScript()
