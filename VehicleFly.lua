@@ -10,9 +10,9 @@ local LocalPlayer = Players.LocalPlayer
 local SPEED = 150  -- Flight speed, adjust as needed
 
 -- Function to toggle vehicle fly
-local function VehicleFlyToggle()
-    VehicleFlyEnabled = not VehicleFlyEnabled
-    if VehicleFlyEnabled then
+local function VehicleFlyToggle(initial)
+    if initial or not VehicleFlyEnabled then
+        VehicleFlyEnabled = true
         print("[DEBUG] Vehicle Fly Enabled")
         RunService:BindToRenderStep("VehicleFly", Enum.RenderPriority.Input.Value, function()
             if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -51,6 +51,7 @@ local function VehicleFlyToggle()
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
             LocalPlayer.Character.HumanoidRootPart.CanCollide = true  -- Restore collision when disabled
         end
+        VehicleFlyEnabled = false
     end
 end
 
@@ -72,5 +73,8 @@ UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
         VehicleFlyToggle()
     end
 end)
+
+-- Enable Vehicle Fly initially
+VehicleFlyToggle(true)
 
 return UnloadVehicleFlyScript
