@@ -1,4 +1,4 @@
--- Vehicle Fly Script (Infinite Yield Inspired)
+-- Vehicle Fly Script (Infinite Yield Inspired with Debugging)
 
 local VehicleFlyEnabled = false
 local RunService = game:GetService("RunService")
@@ -11,6 +11,7 @@ local SPEED = 150  -- Скорость полета, измените по не�
 
 local function VehicleFlyToggle()
     VehicleFlyEnabled = not VehicleFlyEnabled
+    print("[Debug] VehicleFlyEnabled set to:", VehicleFlyEnabled)
     if VehicleFlyEnabled then
         RunService:BindToRenderStep("VehicleFly", Enum.RenderPriority.Input.Value, function()
             if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -38,10 +39,14 @@ local function VehicleFlyToggle()
 
                 rootPart.Velocity = flyDirection
                 rootPart.CFrame = CFrame.lookAt(rootPart.Position, rootPart.Position + Camera.CFrame.LookVector)
+                print("[Debug] flyDirection:", flyDirection)
+            else
+                print("[Debug] HumanoidRootPart not found or character missing")
             end
         end)
     else
         RunService:UnbindFromRenderStep("VehicleFly")
+        print("[Debug] VehicleFly RenderStep unbound")
     end
 end
 
