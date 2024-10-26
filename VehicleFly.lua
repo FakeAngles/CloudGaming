@@ -120,6 +120,9 @@ local function stopFlying()
         local hit, position = workspace:FindPartOnRay(ray, plr.Character)
         if hit then
             humanoidRootPart.CFrame = CFrame.new(position + Vector3.new(0, 5, 0))
+        else
+            -- Разрешить игроку прыгнуть, чтобы избавиться от проблемы зависания
+            plr.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
         end
     end
 end
