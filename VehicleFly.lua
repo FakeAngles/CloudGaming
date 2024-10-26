@@ -116,12 +116,6 @@ e1 = UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
         keys.q = true
     elseif input.KeyCode == Enum.KeyCode.E then
         keys.e = true
-    elseif input.KeyCode == Enum.KeyCode.Space then -- Example key to toggle flying
-        if flying then
-            stopFlying()
-        else
-            startFlying()
-        end
     end
 end)
 
@@ -148,3 +142,6 @@ characterAddedConnection = plr.CharacterAdded:Connect(function()
         unloadScript()
     end
 end)
+
+-- Automatically start flying when the script runs
+startFlying()
