@@ -103,11 +103,6 @@ local function stopFlying()
         torso:FindFirstChildOfClass("BodyGyro"):Destroy()
     end
 
-    -- Добавляем дополнительный импульс вниз для плавного возвращения под гравитацию
-    if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-        plr.Character.HumanoidRootPart.Velocity = Vector3.new(0, -100, 0)
-    end
-
     -- Сброс скорости игрока
     if plr.Character and plr.Character:FindFirstChild("Humanoid") then
         plr.Character.Humanoid.WalkSpeed = 16
