@@ -54,13 +54,6 @@ local function VehicleFlyToggle()
     end
 end
 
--- Set up keybind for toggling vehicle fly
-UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
-    if not gameProcessedEvent and input.KeyCode == Enum.KeyCode.J then
-        VehicleFlyToggle()
-    end
-end)
-
 -- Function to unload the script
 local function UnloadVehicleFlyScript()
     if VehicleFlyEnabled then
@@ -74,16 +67,8 @@ local function UnloadVehicleFlyScript()
 end
 
 -- Integrate VehicleFly control into existing menu
-game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessedEvent)
-    if input.KeyCode == Enum.KeyCode.RightShift and not gameProcessedEvent then
-        if MenuOpen then
-            MenuGui.Enabled = false
-            MenuOpen = false
-        else
-            MenuGui.Enabled = true
-            MenuOpen = true
-        end
-    elseif input.KeyCode == Enum.KeyCode.J and not gameProcessedEvent then
+UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+    if not gameProcessedEvent and input.KeyCode == VehicleFlyBindKey then
         VehicleFlyToggle()
     end
 end)
