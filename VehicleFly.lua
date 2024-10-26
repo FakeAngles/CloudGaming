@@ -107,6 +107,11 @@ local function stopFlying()
     if plr.Character and plr.Character:FindFirstChild("Humanoid") then
         plr.Character.Humanoid.WalkSpeed = 16
     end
+
+    -- Удаление Core из персонажа
+    if Core and Core.Parent then
+        Core:Destroy()
+    end
 end
 
 local function unloadScript()
