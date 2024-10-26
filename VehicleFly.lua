@@ -6,18 +6,18 @@ local plr = Players.LocalPlayer
 local mouse = plr:GetMouse()
 local localplayer = plr
 
--- Variables for Vehicle Fly state
+
 local flying = false
 local speed = 10
 local keys = {a = false, d = false, w = false, s = false, q = false, e = false}
 local e1, e2, characterAddedConnection
 
--- Remove existing core part if exists
+
 if workspace:FindFirstChild("Core") then
     workspace.Core:Destroy()
 end
 
--- Create core part for flight mechanics
+
 local Core = Instance.new("Part")
 Core.Name = "Core"
 Core.Size = Vector3.new(0.05, 0.05, 0.05)
@@ -27,7 +27,7 @@ spawn(function()
     local Weld = Instance.new("Weld", Core)
     Weld.Part0 = Core
     
-    -- Check for character type and weld accordingly
+    
     local Character = localplayer.Character or localplayer.CharacterAdded:Wait()
     if Character:FindFirstChild("LowerTorso") then
         Weld.Part1 = Character.LowerTorso
@@ -45,7 +45,7 @@ workspace:WaitForChild("Core")
 local torso = workspace.Core
 
 local function startFlying()
-    if flying then return end  -- Проверка, чтобы избежать повторного запуска
+    if flying then return end  
     flying = true
 
     local pos = Instance.new("BodyPosition", torso)
@@ -91,16 +91,16 @@ local function startFlying()
 end
 
 local function stopFlying()
-    if not flying then return end  -- Проверка, чтобы избежать повторного завершения
+    if not flying then return end  
     flying = false
     RunService:UnbindFromRenderStep("VehicleFly")
 
-    -- Удаляем Core и его привязки, чтобы больше не удерживать персонажа
+    
     if workspace:FindFirstChild("Core") then
         workspace.Core:Destroy()
     end
 
-    -- Убедимся, что удалены BodyPosition и BodyGyro, чтобы персонаж вернулся под действие гравитации
+    
     if torso:FindFirstChild("EPIXPOS") then
         torso.EPIXPOS:Destroy()
     end
@@ -150,12 +150,12 @@ e2 = UserInputService.InputEnded:Connect(function(input, gameProcessedEvent)
     end
 end)
 
--- Stop flying if the player dies
+
 characterAddedConnection = plr.CharacterAdded:Connect(function()
     if flying then
         unloadScript()
     end
 end)
 
--- Automatically start flying when the script runs
+
 startFlying()
