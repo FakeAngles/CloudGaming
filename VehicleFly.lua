@@ -86,7 +86,11 @@ local function startFlying()
 end
 
 local function stopFlying()
-    if not flying then return end  
+    if not flying then return end
+    -- Удаляем Core, если существует
+    if workspace:FindFirstChild("Core") then
+        workspace.Core:Destroy()
+    end  
     flying = false
     RunService:UnbindFromRenderStep("VehicleFly")
 
