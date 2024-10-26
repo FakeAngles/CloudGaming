@@ -86,7 +86,24 @@ local function startFlying()
     end)
 end
 
-local function stopFlying()
+local 
+function stopFlying()
+    if not flying then return end  
+    flying = false
+    RunService:UnbindFromRenderStep("VehicleFly")
+    
+    -- Remove the Core part to stop flying
+    if workspace:FindFirstChild("Core") then
+        workspace.Core:Destroy()
+    end
+    
+    -- Re-enable gravity and apply a small impulse to reset physics
+    local humanoidRootPart = localplayer.Character and localplayer.Character:FindFirstChild("HumanoidRootPart")
+    if humanoidRootPart then
+        humanoidRootPart.Velocity = Vector3.new(0, -10, 0)  -- Apply downward force to restore natural fall
+    end
+end
+
     if not flying then return end  
     flying = false
     RunService:UnbindFromRenderStep("VehicleFly")
