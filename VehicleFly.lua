@@ -20,7 +20,7 @@ local function VehicleFlyToggle()
                 local flyDirection = Vector3.new(0, 0, 0)
 
                 -- Directional controls for flying
-                if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                if UserInputService:IsKeyDown(VehicleFlyBindKey) then
                     flyDirection = flyDirection + (Camera.CFrame.LookVector * SPEED)
                 end
                 if UserInputService:IsKeyDown(Enum.KeyCode.S) then
