@@ -1,80 +1,76 @@
--- New Vehicle Fly Script with NoClip Integration into Menu
+-- Vehicle Fly Script
 
 local VehicleFlyEnabled = false
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local Camera = workspace.CurrentCamera
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+local VehicleFlyConnection = nil
+local VehicleFlySpeed = 100 -- Speed of flying, can be adjusted
 
-local SPEED = 150  -- Flight speed, adjust as needed
+local function EnableVehicleFly()
+    local vehicle = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("VehicleSeat")
+    if not vehicle then return end
 
--- Function to toggle vehicle fly
-local function VehicleFlyToggle(initial)
-    if initial or not VehicleFlyEnabled then
-        VehicleFlyEnabled = true
-        print("[DEBUG] Vehicle Fly Enabled")
-        RunService:BindToRenderStep("VehicleFly", Enum.RenderPriority.Input.Value, function()
-            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                local rootPart = LocalPlayer.Character.HumanoidRootPart
-                local flyDirection = Vector3.new(0, 0, 0)
-
-                -- Directional controls for flying
-                if UserInputService:IsKeyDown(VehicleFlyBindKey) then
-                    flyDirection = flyDirection + (Camera.CFrame.LookVector * SPEED)
-                end
-                if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                    flyDirection = flyDirection - (Camera.CFrame.LookVector * SPEED)
-                end
-                if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                    flyDirection = flyDirection - (Camera.CFrame.RightVector * SPEED)
-                end
-                if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                    flyDirection = flyDirection + (Camera.CFrame.RightVector * SPEED)
-                end
-                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-                    flyDirection = flyDirection + Vector3.new(0, SPEED, 0)
-                end
-                if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-                    flyDirection = flyDirection - Vector3.new(0, SPEED, 0)
-                end
-
-                -- Apply velocity to move the vehicle through all obstacles (NoClip)
-                rootPart.Velocity = flyDirection
-                rootPart.CFrame = CFrame.lookAt(rootPart.Position, rootPart.Position + Camera.CFrame.LookVector)
-                rootPart.CanCollide = false  -- Disable collision to allow flying through textures
+    VehicleFlyEnabled = true
+    VehicleFlyConnection = RunService.Heartbeat:Connect(function()
+        if VehicleFlyEnabled and vehicle then
+            local direction = Vector3.new(0, 0, 0)
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                direction = direction + Camera.CFrame.LookVector
             end
-        end)
-    else
-        print("[DEBUG] Vehicle Fly Disabled")
-        RunService:UnbindFromRenderStep("VehicleFly")
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            LocalPlayer.Character.HumanoidRootPart.CanCollide = true  -- Restore collision when disabled
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                direction = direction - Camera.CFrame.LookVector
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                direction = direction - Camera.CFrame.RightVector
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                direction = direction + Camera.CFrame.RightVector
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                direction = direction + Vector3.new(0, 1, 0)
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+                direction = direction - Vector3.new(0, 1, 0)
+            end
+
+            vehicle.Velocity = direction.Unit * VehicleFlySpeed
         end
-        VehicleFlyEnabled = false
-    end
+    end)
+    SendNotification("Vehicle Fly", "Vehicle Fly включен", 3)
 end
 
--- Function to unload the script
-local function UnloadVehicleFlyScript()
-    if VehicleFlyEnabled then
-        VehicleFlyToggle()  -- Disable the fly mode if it's currently enabled
+local function DisableVehicleFly()
+    if VehicleFlyConnection then
+        VehicleFlyConnection:Disconnect()
+        VehicleFlyConnection = nil
     end
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        LocalPlayer.Character.HumanoidRootPart.CanCollide = true  -- Restore collision
-    end
-    print("[DEBUG] Vehicle Fly Script Unloaded")
     VehicleFlyEnabled = false
+    SendNotification("Vehicle Fly", "Vehicle Fly выключен", 3)
 end
 
--- Integrate VehicleFly control into existing menu
+-- Toggle Vehicle Fly based on menu interaction
+local function ToggleVehicleFly()
+    if VehicleFlyEnabled then
+        DisableVehicleFly()
+    else
+        EnableVehicleFly()
+    end
+end
+
+-- Bind ToggleVehicleFly to the menu button or key
+VehicleFlyButton.MouseButton1Click:Connect(function()
+    ToggleVehicleFly()
+end)
 UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
-    if not gameProcessedEvent and input.KeyCode == VehicleFlyBindKey then
-        VehicleFlyToggle()
+    if input.KeyCode == VehicleFlyBindKey and not gameProcessedEvent then
+        ToggleVehicleFly()
     end
 end)
 
--- Enable Vehicle Fly initially
-VehicleFlyToggle(true)
+-- Unload Vehicle Fly Script
+local function UnloadVehicleFly()
+    DisableVehicleFly()
+end
 
-return UnloadVehicleFlyScript
+-- Add UnloadVehicleFly to the unload button in the menu
+UnloadButton.MouseButton1Click:Connect(function()
+    UnloadVehicleFly()
+end)
