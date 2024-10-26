@@ -44,7 +44,9 @@ workspace:WaitForChild("Core")
 local torso = workspace.Core
 
 local function startFlying()
+    if flying then return end  -- Проверка, чтобы избежать повторного запуска
     flying = true
+
     local pos = Instance.new("BodyPosition", torso)
     local gyro = Instance.new("BodyGyro", torso)
     pos.Name = "EPIXPOS"
@@ -88,6 +90,7 @@ local function startFlying()
 end
 
 local function stopFlying()
+    if not flying then return end  -- Проверка, чтобы избежать повторного завершения
     flying = false
     RunService:UnbindFromRenderStep("VehicleFly")
     if workspace:FindFirstChild("Core") then
