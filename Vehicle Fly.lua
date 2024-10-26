@@ -35,7 +35,7 @@ local function VehicleFlyToggle()
                 end
 
                 rootPart.Velocity = flyDirection
-                rootPart.CFrame = CFrame.new(rootPart.Position, rootPart.Position + Camera.CFrame.LookVector)
+                rootPart.CFrame = CFrame.lookAt(rootPart.Position, rootPart.Position + Camera.CFrame.LookVector)
             end
         end)
     else
