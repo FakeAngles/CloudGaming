@@ -6,17 +6,14 @@ local plr = Players.LocalPlayer
 local mouse = plr:GetMouse()
 local localplayer = plr
 
-
 local flying = false
 local speed = 10
 local keys = {a = false, d = false, w = false, s = false, q = false, e = false}
 local e1, e2, characterAddedConnection
 
-
 if workspace:FindFirstChild("Core") then
     workspace.Core:Destroy()
 end
-
 
 local Core = Instance.new("Part")
 Core.Name = "Core"
@@ -26,8 +23,7 @@ spawn(function()
     Core.Parent = workspace
     local Weld = Instance.new("Weld", Core)
     Weld.Part0 = Core
-    
-    
+
     local Character = localplayer.Character or localplayer.CharacterAdded:Wait()
     if Character:FindFirstChild("LowerTorso") then
         Weld.Part1 = Character.LowerTorso
@@ -95,17 +91,22 @@ local function stopFlying()
     flying = false
     RunService:UnbindFromRenderStep("VehicleFly")
 
-    
+    -- Удаляем Core и его привязки
     if workspace:FindFirstChild("Core") then
         workspace.Core:Destroy()
     end
 
-    
+    -- Убедимся, что удалены BodyPosition и BodyGyro
     if torso:FindFirstChild("EPIXPOS") then
         torso.EPIXPOS:Destroy()
     end
     if torso:FindFirstChildOfClass("BodyGyro") then
         torso:FindFirstChildOfClass("BodyGyro"):Destroy()
+    end
+
+    -- Добавляем небольшой импульс вниз, чтобы персонаж вернулся под действие гравитации
+    if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+        plr.Character.HumanoidRootPart.Velocity = Vector3.new(0, -50, 0)
     end
 end
 
@@ -150,12 +151,10 @@ e2 = UserInputService.InputEnded:Connect(function(input, gameProcessedEvent)
     end
 end)
 
-
 characterAddedConnection = plr.CharacterAdded:Connect(function()
     if flying then
         unloadScript()
     end
 end)
-
 
 startFlying()
