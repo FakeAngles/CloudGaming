@@ -1,4 +1,4 @@
--- Vehicle Fly Script with Debug Messages and Menu Integration
+-- New Vehicle Fly Script with NoClip Integration into Menu
 
 local VehicleFlyEnabled = false
 local RunService = game:GetService("RunService")
@@ -7,64 +7,85 @@ local Camera = workspace.CurrentCamera
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
-local SPEED = 150  -- Скорость полета, измените по необходимости
+local SPEED = 150  -- Flight speed, adjust as needed
 
+-- Function to toggle vehicle fly
 local function VehicleFlyToggle()
     VehicleFlyEnabled = not VehicleFlyEnabled
-    print("[DEBUG] VehicleFlyEnabled set to:", VehicleFlyEnabled)
     if VehicleFlyEnabled then
+        print("[DEBUG] Vehicle Fly Enabled")
         RunService:BindToRenderStep("VehicleFly", Enum.RenderPriority.Input.Value, function()
-            print("[DEBUG] VehicleFly RenderStep running...")
             if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 local rootPart = LocalPlayer.Character.HumanoidRootPart
                 local flyDirection = Vector3.new(0, 0, 0)
 
+                -- Directional controls for flying
                 if UserInputService:IsKeyDown(Enum.KeyCode.W) then
                     flyDirection = flyDirection + (Camera.CFrame.LookVector * SPEED)
-                    print("[DEBUG] W Key Pressed: Moving Forward")
                 end
                 if UserInputService:IsKeyDown(Enum.KeyCode.S) then
                     flyDirection = flyDirection - (Camera.CFrame.LookVector * SPEED)
-                    print("[DEBUG] S Key Pressed: Moving Backward")
                 end
                 if UserInputService:IsKeyDown(Enum.KeyCode.A) then
                     flyDirection = flyDirection - (Camera.CFrame.RightVector * SPEED)
-                    print("[DEBUG] A Key Pressed: Moving Left")
                 end
                 if UserInputService:IsKeyDown(Enum.KeyCode.D) then
                     flyDirection = flyDirection + (Camera.CFrame.RightVector * SPEED)
-                    print("[DEBUG] D Key Pressed: Moving Right")
                 end
                 if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
                     flyDirection = flyDirection + Vector3.new(0, SPEED, 0)
-                    print("[DEBUG] Space Key Pressed: Moving Up")
                 end
                 if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
                     flyDirection = flyDirection - Vector3.new(0, SPEED, 0)
-                    print("[DEBUG] Left Shift Key Pressed: Moving Down")
                 end
 
+                -- Apply velocity to move the vehicle through all obstacles (NoClip)
                 rootPart.Velocity = flyDirection
                 rootPart.CFrame = CFrame.lookAt(rootPart.Position, rootPart.Position + Camera.CFrame.LookVector)
-            else
-                print("[DEBUG] HumanoidRootPart not found")
+                rootPart.CanCollide = false  -- Disable collision to allow flying through textures
             end
         end)
     else
+        print("[DEBUG] Vehicle Fly Disabled")
         RunService:UnbindFromRenderStep("VehicleFly")
-        print("[DEBUG] VehicleFly RenderStep unbound")
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            LocalPlayer.Character.HumanoidRootPart.CanCollide = true  -- Restore collision when disabled
+        end
     end
 end
 
--- Adding Debug for Menu Integration
-local VehicleFlyButton = script.Parent:FindFirstChild("VehicleFlyButton")
-if VehicleFlyButton then
-    VehicleFlyButton.MouseButton1Click:Connect(function()
-        VehicleFlyToggle() -- вызовите VehicleFlyToggle здесь
-        print("[DEBUG MENU] Vehicle Fly Button Clicked") -- добавляем дебаг-сообщение
-    end)
-else
-    print("[DEBUG ERROR] VehicleFlyButton not found in the script.Parent")
+-- Set up keybind for toggling vehicle fly
+UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+    if not gameProcessedEvent and input.KeyCode == Enum.KeyCode.J then
+        VehicleFlyToggle()
+    end
+end)
+
+-- Function to unload the script
+local function UnloadVehicleFlyScript()
+    if VehicleFlyEnabled then
+        VehicleFlyToggle()  -- Disable the fly mode if it's currently enabled
+    end
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CanCollide = true  -- Restore collision
+    end
+    print("[DEBUG] Vehicle Fly Script Unloaded")
+    VehicleFlyEnabled = false
 end
 
-return VehicleFlyToggle
+-- Integrate VehicleFly control into existing menu
+game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessedEvent)
+    if input.KeyCode == Enum.KeyCode.RightShift and not gameProcessedEvent then
+        if MenuOpen then
+            MenuGui.Enabled = false
+            MenuOpen = false
+        else
+            MenuGui.Enabled = true
+            MenuOpen = true
+        end
+    elseif input.KeyCode == Enum.KeyCode.J and not gameProcessedEvent then
+        VehicleFlyToggle()
+    end
+end)
+
+return UnloadVehicleFlyScript
