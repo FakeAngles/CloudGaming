@@ -57,9 +57,14 @@ local function VehicleFlyToggle()
 end
 
 -- Adding Debug for Menu Integration
-VehicleFlyButton.MouseButton1Click:Connect(function()
-    VehicleFlyToggle() -- вызовите VehicleFlyToggle здесь
-    print("[DEBUG MENU] Vehicle Fly Button Clicked") -- добавляем дебаг-сообщение
-end)
+local VehicleFlyButton = script.Parent:FindFirstChild("VehicleFlyButton")
+if VehicleFlyButton then
+    VehicleFlyButton.MouseButton1Click:Connect(function()
+        VehicleFlyToggle() -- вызовите VehicleFlyToggle здесь
+        print("[DEBUG MENU] Vehicle Fly Button Clicked") -- добавляем дебаг-сообщение
+    end)
+else
+    print("[DEBUG ERROR] VehicleFlyButton not found in the script.Parent")
+end
 
 return VehicleFlyToggle
