@@ -1,4 +1,4 @@
--- Vehicle Fly Script (Fixed)
+-- Vehicle Fly Script (Infinite Yield Inspired)
 
 local VehicleFlyEnabled = false
 local RunService = game:GetService("RunService")
@@ -6,6 +6,8 @@ local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+
+local SPEED = 150  -- Скорость полета, измените по необходимости
 
 local function VehicleFlyToggle()
     VehicleFlyEnabled = not VehicleFlyEnabled
@@ -16,22 +18,22 @@ local function VehicleFlyToggle()
                 local flyDirection = Vector3.new(0, 0, 0)
 
                 if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                    flyDirection = flyDirection + (Camera.CFrame.LookVector * 50)
+                    flyDirection = flyDirection + (Camera.CFrame.LookVector * SPEED)
                 end
                 if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                    flyDirection = flyDirection - (Camera.CFrame.LookVector * 50)
+                    flyDirection = flyDirection - (Camera.CFrame.LookVector * SPEED)
                 end
                 if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                    flyDirection = flyDirection - (Camera.CFrame.RightVector * 50)
+                    flyDirection = flyDirection - (Camera.CFrame.RightVector * SPEED)
                 end
                 if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                    flyDirection = flyDirection + (Camera.CFrame.RightVector * 50)
+                    flyDirection = flyDirection + (Camera.CFrame.RightVector * SPEED)
                 end
                 if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-                    flyDirection = flyDirection + Vector3.new(0, 50, 0)
+                    flyDirection = flyDirection + Vector3.new(0, SPEED, 0)
                 end
                 if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-                    flyDirection = flyDirection - Vector3.new(0, 50, 0)
+                    flyDirection = flyDirection - Vector3.new(0, SPEED, 0)
                 end
 
                 rootPart.Velocity = flyDirection
