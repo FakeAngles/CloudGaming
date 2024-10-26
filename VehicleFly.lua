@@ -9,6 +9,7 @@ local localplayer = plr
 local flying = false
 local speed = 10
 local keys = {a = false, d = false, w = false, s = false, q = false, e = false}
+local e1, e2, characterAddedConnection
 
 -- Remove existing core part if exists
 if workspace:FindFirstChild("Core") then
@@ -94,7 +95,14 @@ local function stopFlying()
     end
 end
 
-UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+local function unloadScript()
+    stopFlying()
+    if e1 then e1:Disconnect() end
+    if e2 then e2:Disconnect() end
+    if characterAddedConnection then characterAddedConnection:Disconnect() end
+end
+
+e1 = UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
     if gameProcessedEvent then return end
     if input.KeyCode == Enum.KeyCode.W then
         keys.w = true
@@ -117,7 +125,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
     end
 end)
 
-UserInputService.InputEnded:Connect(function(input, gameProcessedEvent)
+e2 = UserInputService.InputEnded:Connect(function(input, gameProcessedEvent)
     if gameProcessedEvent then return end
     if input.KeyCode == Enum.KeyCode.W then
         keys.w = false
@@ -131,5 +139,12 @@ UserInputService.InputEnded:Connect(function(input, gameProcessedEvent)
         keys.q = false
     elseif input.KeyCode == Enum.KeyCode.E then
         keys.e = false
+    end
+end)
+
+-- Stop flying if the player dies
+characterAddedConnection = plr.CharacterAdded:Connect(function()
+    if flying then
+        unloadScript()
     end
 end)
