@@ -1,4 +1,4 @@
--- Vehicle Fly Script with Debug Messages
+-- Vehicle Fly Script with Debug Messages and Menu Integration
 
 local VehicleFlyEnabled = false
 local RunService = game:GetService("RunService")
@@ -55,5 +55,11 @@ local function VehicleFlyToggle()
         print("[DEBUG] VehicleFly RenderStep unbound")
     end
 end
+
+-- Adding Debug for Menu Integration
+VehicleFlyButton.MouseButton1Click:Connect(function()
+    VehicleFlyToggle() -- вызовите VehicleFlyToggle здесь
+    print("[DEBUG MENU] Vehicle Fly Button Clicked") -- добавляем дебаг-сообщение
+end)
 
 return VehicleFlyToggle
