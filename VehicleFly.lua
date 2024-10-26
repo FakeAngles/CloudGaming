@@ -1,3 +1,4 @@
+
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -93,8 +94,18 @@ local function stopFlying()
     if not flying then return end  -- Проверка, чтобы избежать повторного завершения
     flying = false
     RunService:UnbindFromRenderStep("VehicleFly")
+
+    -- Удаляем Core и его привязки, чтобы больше не удерживать персонажа
     if workspace:FindFirstChild("Core") then
         workspace.Core:Destroy()
+    end
+
+    -- Убедимся, что удалены BodyPosition и BodyGyro, чтобы персонаж вернулся под действие гравитации
+    if torso:FindFirstChild("EPIXPOS") then
+        torso.EPIXPOS:Destroy()
+    end
+    if torso:FindFirstChildOfClass("BodyGyro") then
+        torso:FindFirstChildOfClass("BodyGyro"):Destroy()
     end
 end
 
