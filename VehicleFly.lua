@@ -86,24 +86,7 @@ local function startFlying()
     end)
 end
 
-local 
-function stopFlying()
-    if not flying then return end  
-    flying = false
-    RunService:UnbindFromRenderStep("VehicleFly")
-    
-    -- Remove the Core part to stop flying
-    if workspace:FindFirstChild("Core") then
-        workspace.Core:Destroy()
-    end
-    
-    -- Re-enable gravity and apply a small impulse to reset physics
-    local humanoidRootPart = localplayer.Character and localplayer.Character:FindFirstChild("HumanoidRootPart")
-    if humanoidRootPart then
-        humanoidRootPart.Velocity = Vector3.new(0, -10, 0)  -- Apply downward force to restore natural fall
-    end
-end
-
+local function stopFlying()
     if not flying then return end  
     flying = false
     RunService:UnbindFromRenderStep("VehicleFly")
@@ -114,16 +97,15 @@ end
     end
 
     -- Убедимся, что удалены BodyPosition и BodyGyro
-    if torso:FindFirstChild("EPIXPOS") then
-        torso.EPIXPOS:Destroy()
-    end
-    if torso:FindFirstChildOfClass("BodyGyro") then
-        torso:FindFirstChildOfClass("BodyGyro"):Destroy()
+    for _, instance in ipairs(torso:GetChildren()) do
+        if instance:IsA("BodyPosition") or instance:IsA("BodyGyro") then
+            instance:Destroy()
+        end
     end
 
-    -- Добавляем небольшой импульс вниз, чтобы персонаж вернулся под действие гравитации
+    -- Добавляем дополнительный импульс вниз для плавного возвращения под гравитацию
     if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-        plr.Character.HumanoidRootPart.Velocity = Vector3.new(0, -50, 0)
+        plr.Character.HumanoidRootPart.Velocity = Vector3.new(0, -100, 0)
     end
 end
 
